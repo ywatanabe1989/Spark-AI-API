@@ -1,40 +1,69 @@
 <!-- ---
-!-- Timestamp: 2025-03-15 16:00:27
+!-- Timestamp: 2025-03-15 23:57:43
 !-- Author: ywatanabe
-!-- File: /home/ywatanabe/proj/SparkAI/README.md
+!-- File: /home/ywatanabe/proj/spark-ai-api/README.md
 !-- --- -->
 
-# SparkAI API
+# Spark-AI-API
 
-Provides a Python interface for [SparkAI](https://spark.unimelb.edu.au/).
+This tool provides a command-line interface to interact with SparkAI using Selenium.
 
-## Prerequisites
+## Requirements
 
-- Python 3.x
-- Google Chrome browser installed
-- Selenium Python package
-- Valid UoM SSO credentials (with one-time security code) for SparkAI login
-
-## Installation
-
-``` shell
+```
 pip install -r requirements.txt
 ```
 
 ## Usage
-1. Start the application:
-```bash
-./main.py 2>&1 | tee ./main.py.log
-```
-2. When the browser launches, log in to SparkAI using your UoM SSO credentials.
-3. After logging in, return to the terminal and press Enter to continue.
-4. Authorize any clipboard copy requests in Chrome as needed.
-5. Enter your messages at the prompt. To exit, type "C-c", "quit" or "exit".
 
-## Disclaimer
-Confirm that this script complies with the Terms of Use and ethical guidelines.
+Basic usage:
+```
+./main.py "Your message here"
+```
+
+Or using input/output files:
+```
+./main.py --input-file query.txt --output-file response.txt
+```
+
+## Options
+
+- `--thread-id`: Thread ID to resume a previous conversation
+- `--chrome-profile`: Path to Chrome user data directory
+- `--timeout`: Maximum wait time in seconds
+- `--no-auto-login`: Not attempt automatic login with credentials
+- `--username`: SSO username for auto-login
+- `--password`: SSO password for auto-login
+- `--cookie-file`: File to save/load session cookies
+- `--parser-mode`: Use DOM parsing instead of clipboard for responses
+- `--input-file`, `-i`: Read message from this file instead of command line
+- `--output-file`, `-o`: Save response to this file
+- `--no-headless`: Show Chrome browser window instead of running headless
+
+## Environment Variables
+
+All command-line options can be set using environment variables:
+- `SPARKAI_THREAD_ID`
+- `SPARKAI_CHROME_PROFILE`
+- `SPARKAI_TIMEOUT` 
+- `SPARKAI_NO_AUTO_LOGIN`
+- `SPARKAI_USERNAME`
+- `SPARKAI_PASSWORD`
+- `SPARKAI_COOKIE_FILE`
+- `SPARKAI_PARSER_MODE`
+- `SPARKAI_INPUT_FILE`
+- `SPARKAI_OUTPUT_FILE`
+- `SPARKAI_NO_HEADLESS`
+
+## Multi-line Input
+
+Multi-line messages are supported, with newlines automatically handled as Shift+Enter in the SparkAI interface.
+
+## Headless Mode
+
+By default, the browser runs in headless mode. Use `--no-headless` to show the browser window.
 
 ## Contact
-ywatanabe@unimelb.edu.au
+Yusuke Watanabe (Yusuke.Watanabe@unimelb.edu.au)
 
 <!-- EOF -->
