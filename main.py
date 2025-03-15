@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Timestamp: "2025-03-15 23:53:11 (ywatanabe)"
+# Timestamp: "2025-03-16 01:53:52 (ywatanabe)"
 # File: /home/ywatanabe/proj/spark-ai-api/main.py
 # ----------------------------------------
 import os
@@ -30,7 +30,18 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+    TimeoutException,
+)
+import tempfile
+import subprocess
+import platform
+import subprocess
+import platform
+import socket
+import tempfile
+
 
 class SparkAI:
     """
@@ -54,6 +65,7 @@ class SparkAI:
     close()
         Close the browser session.
     """
+
     def __init__(
         self,
         thread_id=None,
@@ -63,8 +75,8 @@ class SparkAI:
         username=None,
         password=None,
         cookie_file=None,
-        parser_mode=False,
-        headless=True
+        headless=True,
+        persistent_profile=True,
     ):
         """
         Initialize SparkAI instance and launch the Chrome browser.
@@ -84,16 +96,28 @@ class SparkAI:
             UoM SSO password for auto-login.
         cookie_file : str
             Path to save/load session cookies.
-        parser_mode : bool
-            Use response parsing instead of clipboard.
         headless : bool
             Run Chrome in headless mode without visible window.
+        persistent_profile : bool
+            Whether to keep the Chrome profile between sessions.
         """
-        self.parser_mode = parser_mode
-        self.driver = self._setup_chrome(path_chrome_config)
+        self.path_chrome_config = (
+            path_chrome_config  # Store as instance variable first
+        )
+        self.persistent_profile = persistent_profile
 
-        # Initialize the wait object before using it in auto_login
-        self.wait = WebDriverWait(self.driver, max_wait_sec)
+        # Create directory for Chrome profile if it doesn't exist and we want persistence
+        if (
+            persistent_profile
+            and path_chrome_config
+            and not os.path.exists(path_chrome_config)
+        ):
+            os.makedirs(path_chrome_config, exist_ok=True)
+
+        self.driver = self._setup_chrome(
+            self.path_chrome_config, headless
+        )  # Pass headless parameter too
+        self.max_wait_sec = max_wait_sec
 
         # Load cookies if available
         if cookie_file and os.path.exists(cookie_file):
@@ -102,43 +126,25 @@ class SparkAI:
         # Navigate to SparkAI
         url = self._determine_sparkai_url(thread_id)
 
-        # Handle login
-        if auto_login and username and password:
-            self._auto_login(username, password)
-        else:
-            input(
-                "Please login to SparkAI in the browser, then press Enter to continue..."
+        # Check if already logged in before attempting login
+        try:
+            # Use a short timeout to check if already logged in
+            WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.NAME, "prompt"))
             )
+            # print("[DEBUG] Already logged in, skipping authentication.")
+        except TimeoutException:
+            # Not logged in, handle login
+            if auto_login and username and password:
+                self._auto_login(username, password)
+            else:
+                input(
+                    "Please login to SparkAI in the browser, then press Enter to continue..."
+                )
 
         # Save cookies after successful login
         if cookie_file:
             self._save_cookies(cookie_file)
-
-
-    @staticmethod
-    def _setup_chrome(path_chrome_config):
-        """Chrome settings"""
-        if not path_chrome_config:
-            if os.name == "nt":
-                path_chrome_config = rf"C:\Users\{os.getlogin()}\AppData\Local\Google\Chrome\User Data\Default"
-            else:
-                path_chrome_config = os.path.expanduser(
-                    "~/.config/google-chrome/Default"
-                )
-        chrome_options = Options()
-        chrome_options.add_argument(f"user-data-dir={path_chrome_config}")
-        # Enable clipboard permissions
-        chrome_options.add_argument("--enable-features=ClipboardContentSetting")
-        # Set window size to ensure elements are visible
-        chrome_options.add_argument("--window-size=1920,1080")
-        # Allow clipboard access
-        chrome_options.add_experimental_option("prefs", {
-            "profile.content_settings.exceptions.clipboard": {
-                "[*.]*": {"setting": 1}  # 1 = Allow
-            }
-        })
-        driver = webdriver.Chrome(options=chrome_options)
-        return driver
 
     @staticmethod
     def _setup_chrome(path_chrome_config, headless=True):
@@ -150,11 +156,29 @@ class SparkAI:
                 path_chrome_config = os.path.expanduser(
                     "~/.config/google-chrome/Default"
                 )
+
         chrome_options = Options()
-        chrome_options.add_argument(f"user-data-dir={path_chrome_config}")
-        # Enable clipboard permissions
-        chrome_options.add_argument("--enable-features=ClipboardContentSetting")
-        # Set window size to ensure elements are visible
+
+        # Create a fresh Chrome profile without shared user data
+        if os.path.exists(path_chrome_config):
+            # Use the actual profile directory, not Default subdirectory
+            parent_dir = os.path.dirname(path_chrome_config)
+            chrome_options.add_argument(
+                f"user-data-dir={parent_dir}"
+            )
+            # Add profile directory name
+            profile_name = os.path.basename(path_chrome_config)
+            chrome_options.add_argument(f"--profile-directory={profile_name}")
+
+        else:
+            # Create empty directory for Chrome profile
+            os.makedirs(path_chrome_config, exist_ok=True)
+            chrome_options.add_argument(f"user-data-dir={path_chrome_config}")
+
+        # Other Chrome options
+        chrome_options.add_argument(
+            "--enable-features=ClipboardContentSetting"
+        )
         chrome_options.add_argument("--window-size=1920,1080")
 
         # Add headless mode options
@@ -165,11 +189,22 @@ class SparkAI:
             chrome_options.add_argument("--disable-dev-shm-usage")
 
         # Allow clipboard access
-        chrome_options.add_experimental_option("prefs", {
-            "profile.content_settings.exceptions.clipboard": {
-                "[*.]*": {"setting": 1}  # 1 = Allow
-            }
-        })
+        chrome_options.add_experimental_option(
+            "prefs",
+            {
+                "profile.content_settings.exceptions.clipboard": {
+                    "[*.]*": {"setting": 1}  # 1 = Allow
+                },
+                # Disable password saving prompts
+                "credentials_enable_service": False,
+                "profile.password_manager_enabled": False,
+                # Disable cookie prompts
+                "profile.default_content_setting_values.cookies": 1,
+                # Keep cookies between sessions
+                "profile.exit_type": "Normal"
+            },
+        )
+
         driver = webdriver.Chrome(options=chrome_options)
         return driver
 
@@ -190,14 +225,17 @@ class SparkAI:
         try:
             # Check if we're already on the messaging page
             try:
-                self.wait.until(EC.presence_of_element_located((By.NAME, "prompt")))
-                # print("Already logged in.")
+                # Use a shorter timeout just for checking if already logged in
+                WebDriverWait(self.driver, 2).until(
+                    EC.presence_of_element_located((By.NAME, "prompt"))
+                )
+                # print("[DEBUG] Already logged in.")
                 return True
             except TimeoutException:
                 pass
 
             # Wait for login form - username field
-            username_field = self.wait.until(
+            username_field = WebDriverWait(self.driver, 2).until(
                 EC.presence_of_element_located((By.NAME, "identifier"))
             )
             username_field.clear()
@@ -205,59 +243,153 @@ class SparkAI:
             time.sleep(0.5)
 
             # Click the Next button
-            next_button = self.wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "input.button-primary[value='Next']"))
+            next_button = WebDriverWait(self.driver, 2).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, "input.button-primary[value='Next']")
+                )
             )
             next_button.click()
 
             # Wait for password field to appear
-            password_field = self.wait.until(
-                EC.presence_of_element_located((By.NAME, "credentials.passcode"))
+            password_field = WebDriverWait(self.driver, 4).until(
+                EC.presence_of_element_located(
+                    (By.NAME, "credentials.passcode")
+                )
             )
             password_field.clear()
             password_field.send_keys(password)
 
             # Click verify button
-            verify_button = self.wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='submit'][value='Verify']"))
+            verify_button = WebDriverWait(self.driver, 2).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, "input[type='submit'][value='Verify']")
+                )
             )
             verify_button.click()
 
-            # Wait for successful login or MFA challenge
-            try:
-                # Check if we need to handle MFA
-                self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".mfa-verify-form")))
-                print("MFA required. Please enter the code in the browser.")
-                input("Press Enter after completing MFA...")
-            except TimeoutException:
-                # No MFA needed
-                pass
+            # Handle authentication methods if they appear
+            self._handle_duo_authentication()
 
             # Wait for chat interface to load
-            self.wait.until(EC.presence_of_element_located((By.NAME, "prompt")))
-            print("Login successful.")
+            WebDriverWait(self.driver, 32).until(
+                EC.presence_of_element_located((By.NAME, "prompt"))
+            )
+            # print("[DEBUG] Login successful.")
             return True
-
         except Exception as e:
             print(f"Login failed: {e}")
             input("Please login manually, then press Enter to continue...")
             return False
 
-    def _save_cookies(self, cookie_file):
-        """Save browser cookies to file for future sessions."""
-        with open(cookie_file, 'w') as f:
-            json.dump(self.driver.get_cookies(), f)
+    def _handle_duo_authentication(self):
+        """
+        Handle the Duo Security authentication page by selecting push notification if available.
+        """
+        try:
+            # First check if we're already on an authentication page before waiting
+            auth_elements = self.driver.find_elements(
+                By.CLASS_NAME, "authenticator-verify-list"
+            )
+
+            # Only proceed with authentication if elements are already present
+            if not auth_elements:
+                # Quick check to see if authentication screen appears
+                try:
+                    WebDriverWait(self.driver, 3).until(
+                        EC.presence_of_element_located(
+                            (By.CLASS_NAME, "authenticator-verify-list")
+                        )
+                    )
+                except TimeoutException:
+                    # No authentication required, exit early
+                    return
+
+            # At this point, we know authentication is needed
+
+            # Try to find the "Get a push notification" button
+            push_buttons = self.driver.find_elements(
+                By.XPATH,
+                "//h3[contains(text(), 'Get a push notification')]/../..//a[contains(@class, 'button')]",
+            )
+
+            if push_buttons:
+                # Click the push notification button
+                push_buttons[0].click()
+                # print("[DEBUG] Selected push notification for authentication")
+            else:
+                # If push notification not available, look for any authentication option
+                auth_buttons = self.driver.find_elements(
+                    By.XPATH,
+                    "//div[contains(@class, 'authenticator-button')]//a[contains(@class, 'button')]",
+                )
+                if auth_buttons:
+                    auth_buttons[0].click()
+                    # print("[DEBUG] Selected available authentication method")
+                else:
+                    print(
+                        "No authentication methods found. Manual intervention may be required."
+                    )
+                    input("Press Enter after completing authentication...")
+        except Exception as e:
+            print(f"Error during authentication: {e}")
+            # Don't prompt for manual intervention unless we're sure authentication is needed
+            if "authenticator-verify-list" in self.driver.page_source:
+                input(
+                    "Please complete authentication manually, then press Enter to continue..."
+                )
 
     def _load_cookies(self, cookie_file):
         """Load cookies from file to restore session."""
+        # First navigate to the domain to set cookies properly
         self.driver.get("https://spark.unimelb.edu.au")
+        time.sleep(1)  # Give the page time to load
+
         try:
-            with open(cookie_file, 'r') as f:
+            with open(cookie_file, "r") as f:
                 cookies = json.load(f)
-                for cookie in cookies:
-                    self.driver.add_cookie(cookie)
+
+            # Add cookies one by one with domain checks
+            for cookie in cookies:
+                # Ensure cookie has all required fields
+                if "domain" in cookie:
+                    # Remove problematic attributes that might cause issues
+                    if "expiry" in cookie:
+                        cookie["expiry"] = int(cookie["expiry"])
+
+                    # Skip sameSite=None cookies in non-secure contexts
+                    if (
+                        "sameSite" in cookie
+                        and cookie["sameSite"] == "None"
+                        and not cookie.get("secure", False)
+                    ):
+                        continue
+
+                    try:
+                        # Make sure we're on a page with the right domain before adding cookie
+                        domain = cookie["domain"].lstrip(".")
+                        if domain in self.driver.current_url:
+                            self.driver.add_cookie(cookie)
+                    except Exception as e:
+                        print(f"Couldn't add cookie {cookie.get('name')}: {e}")
+
+            # Refresh page to apply cookies
+            self.driver.refresh()
         except Exception as e:
             print(f"Error loading cookies: {e}")
+
+    def _save_cookies(self, cookie_file):
+        """Save browser cookies to file for future sessions."""
+        # Wait a bit for any authentication to complete
+        time.sleep(2)
+
+        try:
+            # Get all cookies and save them
+            cookies = self.driver.get_cookies()
+            with open(cookie_file, "w") as f:
+                json.dump(cookies, f)
+            print(f"Saved {len(cookies)} cookies to {cookie_file}")
+        except Exception as e:
+            print(f"Error saving cookies: {e}")
 
     def _determine_sparkai_url(self, thread_id):
         """URL of web SparkAI chat interface"""
@@ -301,13 +433,13 @@ class SparkAI:
             from selenium.webdriver.common.action_chains import ActionChains
             from selenium.webdriver.common.keys import Keys
 
-            message_box = self.wait.until(
+            message_box = WebDriverWait(self.driver, 8).until(
                 EC.presence_of_element_located((By.NAME, "prompt"))
             )
             message_box.clear()
 
             # Split message into lines
-            lines = message.split('\n')
+            lines = message.split("\n")
 
             # Type first line normally
             message_box.send_keys(lines[0])
@@ -326,15 +458,17 @@ class SparkAI:
                 time.sleep(0.1)
 
             # Click the send button
-            send_button = self.wait.until(
+            send_button = WebDriverWait(self.driver, 2).until(
                 EC.element_to_be_clickable((By.ID, "send-button"))
             )
             send_button.click()
 
             # Wait for message to be sent (loading indicator to disappear)
             try:
-                self.wait.until_not(
-                    EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'animate-pulse')]"))
+                WebDriverWait(self.driver, 2).until_not(
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//div[contains(@class, 'animate-pulse')]")
+                    )
                 )
             except:
                 pass
@@ -352,8 +486,6 @@ class SparkAI:
         str
             The text obtained from the system clipboard.
         """
-        if self.parser_mode:
-            return self._get_llm_response_by_parsing()
         try:
             # Get original number of copy buttons
             orig_count = self._count_n_copy_buttons()
@@ -361,8 +493,10 @@ class SparkAI:
             self._monitor_n_copy_buttons(orig_count)
             # Wait for any loading animations to disappear
             try:
-                self.wait.until_not(
-                    EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'animate-pulse')]"))
+                WebDriverWait(self.driver, 64).until_not(
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//div[contains(@class, 'animate-pulse')]")
+                    )
                 )
             except:
                 # No loading animation found, continue
@@ -371,11 +505,17 @@ class SparkAI:
             time.sleep(0.5)
             # Find all copy buttons and click the last one (most recent response)
             copy_button_xpath = "//button[.//div[contains(@class, 'sr-only') and normalize-space(text())='Copy message']]"
-            new_buttons = self.driver.find_elements(By.XPATH, copy_button_xpath)
+            new_buttons = self.driver.find_elements(
+                By.XPATH, copy_button_xpath
+            )
             new_button = new_buttons[-1]
 
             # Detect if we're in WSL
-            in_wsl = "microsoft-standard" in os.uname().release.lower() if hasattr(os, 'uname') else False
+            in_wsl = (
+                "microsoft-standard" in os.uname().release.lower()
+                if hasattr(os, "uname")
+                else False
+            )
 
             if in_wsl:
                 # In WSL, use JavaScript method directly
@@ -386,7 +526,7 @@ class SparkAI:
                 # For other platforms, try pyperclip first
                 try:
                     # Clear clipboard before clicking the copy button
-                    pyperclip.copy('')
+                    pyperclip.copy("")
                     # Click the copy button
                     new_button.click()
                     # Give time for the clipboard operation to complete
@@ -406,84 +546,6 @@ class SparkAI:
             sys.stderr.write(f"Error getting response: {e}\n")
             self.driver.save_screenshot("clipboard_error.png")
             return f"Error retrieving response: {str(e)}"
-
-    def _get_llm_response_by_parsing(self):
-        """
-        Parse LLM response directly from the DOM without using clipboard.
-        Returns
-        -------
-        str
-            The extracted text response.
-        """
-        try:
-            # Get original count of messages
-            orig_count = self._count_n_copy_buttons()
-
-            # Wait for new message
-            self._monitor_n_copy_buttons(orig_count)
-
-            # Wait a moment for any animations to complete
-            time.sleep(0.5)
-
-            # Find the message container for the latest message
-            message_containers = self.driver.find_elements(
-                By.XPATH,
-                "//div[contains(@class, 'prose') and contains(@class, 'w-full')]"
-            )
-
-            # Get the last container (most recent message)
-            if not message_containers:
-                return "Could not find message container"
-
-            latest_container = message_containers[-1]
-
-            # Extract text content
-            response_text = self.driver.execute_script("""
-                function extractTextWithCodeBlocks(element) {
-                    let result = '';
-
-                    // Handle all child nodes
-                    for (const node of element.childNodes) {
-                        // If text node, just add the text
-                        if (node.nodeType === Node.TEXT_NODE) {
-                            result += node.textContent;
-                        }
-                        // If element node
-                        else if (node.nodeType === Node.ELEMENT_NODE) {
-                            // For code blocks
-                            if (node.tagName === 'PRE') {
-                                const codeElement = node.querySelector('code');
-                                if (codeElement) {
-                                    result += '```\\n' + codeElement.textContent + '\\n```\\n';
-                                } else {
-                                    result += '```\\n' + node.textContent + '\\n```\\n';
-                                }
-                            }
-                            // For other block elements, ensure there are line breaks
-                            else if (getComputedStyle(node).display === 'block') {
-                                const innerText = extractTextWithCodeBlocks(node);
-                                if (innerText.trim()) {
-                                    result += innerText + '\\n';
-                                }
-                            }
-                            // For inline elements, just get their text
-                            else {
-                                result += extractTextWithCodeBlocks(node);
-                            }
-                        }
-                    }
-                    return result;
-                }
-
-                return extractTextWithCodeBlocks(arguments[0]);
-            """, latest_container)
-
-            return response_text.strip()
-
-        except Exception as e:
-            sys.stderr.write(f"Error parsing response: {e}\n")
-            self.driver.save_screenshot("parser_error.png")
-            return f"Error parsing response: {str(e)}"
 
     def _count_n_copy_buttons(self):
         """
@@ -509,7 +571,7 @@ class SparkAI:
             The new count of copy buttons.
         """
         copy_button_xpath = "//button[.//div[contains(@class, 'sr-only') and normalize-space(text())='Copy message']]"
-        self.wait.until(
+        WebDriverWait(self.driver, 32).until(
             lambda d: len(d.find_elements(By.XPATH, copy_button_xpath))
             > orig_count
         )
@@ -538,21 +600,19 @@ class SparkAI:
         """Close the web driver and exit the browser."""
         self.driver.quit()
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='SparkAI CLI Interface')
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="SparkAI CLI Interface")
     # Environment variables with fallbacks
-    default_thread_id = os.environ.get('SPARKAI_THREAD_ID')
+    default_thread_id = os.environ.get("SPARKAI_THREAD_ID")
     # Convert "None" string to actual None
     if default_thread_id in ["None", "none", "null", ""]:
         default_thread_id = None
-
-    default_chrome_profile = os.environ.get('SPARKAI_CHROME_PROFILE')
-    default_timeout = int(os.environ.get('SPARKAI_TIMEOUT', '30'))
-    default_username = os.environ.get('SPARKAI_USERNAME')
-    default_password = os.environ.get('SPARKAI_PASSWORD')
-    default_cookie_file = os.environ.get('SPARKAI_COOKIE_FILE')
-    default_parser_mode = os.environ.get('SPARKAI_PARSER_MODE', '').lower() in ('true', 'yes', '1')
+    default_chrome_profile = os.environ.get("SPARKAI_CHROME_PROFILE")
+    default_timeout = int(os.environ.get("SPARKAI_TIMEOUT", "30"))
+    default_username = os.environ.get("SPARKAI_USERNAME")
+    default_password = os.environ.get("SPARKAI_PASSWORD")
+    default_cookie_file = os.environ.get("SPARKAI_COOKIE_FILE")
 
     parser.add_argument(
         "--thread-id",
@@ -575,7 +635,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--no-auto-login",
         action="store_true",
-        default=os.environ.get('SPARKAI_NO_AUTO_LOGIN', '').lower() in ('true', 'yes', '1'),
+        default=os.environ.get("SPARKAI_NO_AUTO_LOGIN", "").lower()
+        in ("true", "yes", "1"),
         help="Not attempt automatic login with credentials",
     )
     parser.add_argument(
@@ -597,12 +658,6 @@ def parse_args() -> argparse.Namespace:
         help="File to save/load session cookies",
     )
     parser.add_argument(
-        "--parser-mode",
-        action="store_true",
-        default=default_parser_mode,
-        help="Use DOM parsing instead of clipboard for responses",
-    )
-    parser.add_argument(
         "message",
         type=str,
         nargs="?",
@@ -612,76 +667,105 @@ def parse_args() -> argparse.Namespace:
         "--input-file",
         "-i",
         type=str,
-        default=os.environ.get('SPARKAI_INPUT_FILE'),
+        default=os.environ.get("SPARKAI_INPUT_FILE"),
         help="Read message from this file instead of command line",
     )
     parser.add_argument(
         "--output-file",
         "-o",
         type=str,
-        default=os.environ.get('SPARKAI_OUTPUT_FILE'),
+        default=os.environ.get("SPARKAI_OUTPUT_FILE"),
         help="Save response to this file",
     )
     parser.add_argument(
         "--no-headless",
         action="store_true",
-        default=os.environ.get('SPARKAI_NO_HEADLESS', '').lower() in ('true', 'yes', '1'),
+        default=os.environ.get("SPARKAI_NO_HEADLESS", "").lower()
+        in ("true", "yes", "1"),
         help="Show Chrome browser window instead of running headless",
     )
-    args = parser.parse_args()
+    parser.add_argument(
+        "--keep-open",
+        action="store_true",
+        default=os.environ.get("SPARKAI_KEEP_OPEN", "").lower()
+        in ("true", "yes", "1"),
+        help="Keep the browser open after running",
+    )
+    parser.add_argument(
+        "--no-persistent-profile",
+        action="store_true",
+        default=os.environ.get("SPARKAI_NO_PERSISTENT_PROFILE", "").lower()
+        in ("true", "yes", "1"),
+        help="Don't maintain persistent browser profile",
+    )
 
+    args = parser.parse_args()
     # Check if message is from stdin when not provided as argument
     if not args.message and not sys.stdin.isatty():
         args.message = sys.stdin.read().strip()
-
     return args
 
+
 def main():
+    # Parse command line arguments
     args = parse_args()
 
-    # Get message from input file if specified
-    if args.input_file:
-        try:
-            with open(args.input_file, 'r', encoding='utf-8') as f:
-                args.message = f.read().strip()
-        except Exception as e:
-            print(f"Error reading input file: {e}")
-            sys.exit(1)
-
-    # Check if message is from stdin when not provided as argument or file
-    if not args.message and not sys.stdin.isatty():
-        args.message = sys.stdin.read().strip()
-
-    if not args.message:
-        print("Error: No message provided. Please provide a message as an argument, via stdin, or with --input-file.")
-        sys.exit(1)
-
-    # Initialize SparkAI with command-line arguments
+    # Fix the SparkAI class by creating a simple version that runs directly
     sparkai = SparkAI(
         thread_id=args.thread_id,
         path_chrome_config=args.chrome_profile,
         max_wait_sec=args.timeout,
-        auto_login=(not args.no_auto_login),
+        auto_login=not args.no_auto_login,
         username=args.username,
         password=args.password,
         cookie_file=args.cookie_file,
-        parser_mode=args.parser_mode,
-        headless=(not args.no_headless),
+        headless=not args.no_headless,
+        persistent_profile=not args.no_persistent_profile,
     )
 
     try:
-        # Send the message and get response
-        llm_response = sparkai.send_message(args.message)
-
-        # Output response
-        if args.output_file:
-            with open(args.output_file, 'w', encoding='utf-8') as f:
-                f.write(llm_response)
-            print(f"Response saved to {args.output_file}")
+        # If we have an input file, read from it
+        if args.input_file:
+            with open(args.input_file, "r", encoding="utf-8") as f:
+                message = f.read()
+        # If we have a direct message, use it
+        elif args.message:
+            message = args.message
         else:
-            print(llm_response)
-    finally:
+            print("No message provided. Exiting.")
+            if not args.keep_open:
+                sparkai.close()
+            return
+        # Send the message and get the response
+        response = sparkai.send_message(message)
+        # If we have an output file, write to it
+        if args.output_file:
+            with open(args.output_file, "w", encoding="utf-8") as f:
+                f.write(response)
+        else:
+            # Otherwise print to stdout
+            print(response)
+
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.stderr.write(f"Error: {str(e)}\n")
+
+    # Keep browser open if requested
+    if args.keep_open:
+        try:
+            print("Browser is being kept open. Press Ctrl+C to exit...")
+            # Keep the script running until user interrupts with Ctrl+C
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\nExiting...")
+        finally:
+            # Only close when the user explicitly exits
+            sparkai.close()
+    else:
+        # Close the browser by default
         sparkai.close()
+
 
 if __name__ == "__main__":
     main()
