@@ -1,0 +1,52 @@
+Please log in to SparkAI in the browser, then press Enter to continue...Enter your message (type 'quit' to exit):
+
+
+========== YOU ==========
+
+
+========== LLM RESPONSE ==========
+
+Hello! How can I assist you today? Feel free to ask me any questions or let me know if you need help with anything.
+
+========== YOU ==========
+
+
+========== LLM RESPONSE ==========
+
+My name is Claude. It's nice to meet you!
+
+========== YOU ==========
+
+
+========== LLM RESPONSE ==========
+
+Certainly! Here's a simple Python code for "Hello, World!":
+
+```python
+print("Hello, World!")
+```
+
+This is the most basic Python program you can write. When you run this code, it will output:
+
+```
+Hello, World!
+```
+
+If you want a slightly more interactive version, you could try:
+
+```python
+name = input("What's your name? ")
+print(f"Hello, {name}!")
+```
+
+This program asks for the user's name and then greets them personally. When you run it, it will look something like this:
+
+```
+What's your name? Alice
+Hello, Alice!
+```
+
+Feel free to ask if you'd like to see any other Python examples or if you have any questions about Python programming!
+
+========== YOU ==========
+
