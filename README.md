@@ -1,10 +1,10 @@
 <!-- ---
-!-- Timestamp: 2025-03-15 23:57:43
+!-- Timestamp: 2025-03-16 01:25:53
 !-- Author: ywatanabe
 !-- File: /home/ywatanabe/proj/spark-ai-api/README.md
 !-- --- -->
 
-# Spark-AI-API
+# SparkAI API
 
 This tool provides a command-line interface to interact with SparkAI using Selenium.
 
@@ -24,6 +24,36 @@ Basic usage:
 Or using input/output files:
 ```
 ./main.py --input-file query.txt --output-file response.txt
+```
+
+## Web Service
+
+Run as a service that accepts HTTP requests:
+```
+./service.py
+```
+
+This starts a server on port 5000 by default. Send queries using:
+```
+curl -X POST http://localhost:5000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Your question here", "thread_id":"None", "keep-open": true}'
+```
+
+Configure the service using environment variables:
+- `SPARKAI_SERVICE_PORT`: Port to run the service (default: 5000)
+- `SPARKAI_SERVICE_HOST`: Host interface to bind (default: 0.0.0.0)
+
+## SSH Access
+
+You can also access the service remotely via SSH:
+```
+ssh user@remote-server 'cd /path/to/spark-ai-api && ./main.py "Your question here"'
+```
+
+For file input/output over SSH:
+```
+cat query.txt | ssh user@remote-server 'cd /path/to/spark-ai-api && ./main.py' > response.txt
 ```
 
 ## Options
@@ -64,6 +94,7 @@ Multi-line messages are supported, with newlines automatically handled as Shift+
 By default, the browser runs in headless mode. Use `--no-headless` to show the browser window.
 
 ## Contact
+
 Yusuke Watanabe (Yusuke.Watanabe@unimelb.edu.au)
 
 <!-- EOF -->
