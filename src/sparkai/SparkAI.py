@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Timestamp: "2025-03-16 15:03:29 (ywatanabe)"
+# Timestamp: "2025-03-16 15:15:09 (ywatanabe)"
 # File: /home/ywatanabe/proj/spark-ai-api/src/sparkai/SparkAI.py
 # ----------------------------------------
 import os
@@ -441,6 +441,7 @@ class SparkAI:
             new_count = len(new_buttons)
             debug_print(f"Found {new_count} copy buttons for final check")
 
+            not_copied = True
             while not_copied:
                 if new_count > 0:
                     new_button = new_buttons[-1]
@@ -481,6 +482,7 @@ class SparkAI:
                     except Exception as clear_e:
                         debug_print(f"Error clearing clipboard: {clear_e}")
 
+                    not_copied = False # no need
                     return clipboard_text
 
         except Exception as e:
