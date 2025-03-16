@@ -1,100 +1,77 @@
 <!-- ---
-!-- Timestamp: 2025-03-16 01:25:53
+!-- Timestamp: 2025-03-16 07:52:43
 !-- Author: ywatanabe
 !-- File: /home/ywatanabe/proj/spark-ai-api/README.md
 !-- --- -->
 
-# SparkAI API
+# /home/ywatanabe/proj/spark-ai-api/README.md
+# Spark AI API
 
-This tool provides a command-line interface to interact with SparkAI using Selenium.
+A Python client for the University of Melbourne's Spark AI chat system.
 
-## Requirements
+## Installation
 
-```
-pip install -r requirements.txt
+```bash
+pip install sparkai
 ```
 
 ## Usage
 
-Basic usage:
-```
-./main.py "Your message here"
+### Command Line
+
+```bash
+# Basic usage
+sparkai "Your question here"
+
+# With a specific thread ID
+sparkai --thread-id=123456 "Your question here"
+
+# Read from a file and write to a file
+sparkai --input-file=input.txt --output-file=output.txt
+
+# Keep the browser window open
+sparkai --no-headless --keep-open "Your question here"
 ```
 
-Or using input/output files:
-```
-./main.py --input-file query.txt --output-file response.txt
+### As a Library
+
+```python
+from sparkai import SparkAI
+
+# Create a client
+client = SparkAI(
+    username="your_username",
+    password="your_password",
+    auto_login=True,
+    headless=False
+)
+
+# Send a message and get the response
+response = client.send_message("What is the meaning of life?")
+print(response)
+
+# Close the browser when done
+client.close()
 ```
 
-## Web Service
+### API Service
 
-Run as a service that accepts HTTP requests:
-```
-./service.py
-```
+```bash
+# Start the API service
+sparkai-service --port=5000
 
-This starts a server on port 5000 by default. Send queries using:
-```
+# Then make requests:
 curl -X POST http://localhost:5000/api/query \
-  -H "Content-Type: application/json" \
-  -d '{"message":"Your question here", "thread_id":"None", "keep-open": true}'
+     -H "Content-Type: application/json" \
+     -d '{"message":"Your question here"}'
 ```
-
-Configure the service using environment variables:
-- `SPARKAI_SERVICE_PORT`: Port to run the service (default: 5000)
-- `SPARKAI_SERVICE_HOST`: Host interface to bind (default: 0.0.0.0)
-
-## SSH Access
-
-You can also access the service remotely via SSH:
-```
-ssh user@remote-server 'cd /path/to/spark-ai-api && ./main.py "Your question here"'
-```
-
-For file input/output over SSH:
-```
-cat query.txt | ssh user@remote-server 'cd /path/to/spark-ai-api && ./main.py' > response.txt
-```
-
-## Options
-
-- `--thread-id`: Thread ID to resume a previous conversation
-- `--chrome-profile`: Path to Chrome user data directory
-- `--timeout`: Maximum wait time in seconds
-- `--no-auto-login`: Not attempt automatic login with credentials
-- `--username`: SSO username for auto-login
-- `--password`: SSO password for auto-login
-- `--cookie-file`: File to save/load session cookies
-- `--parser-mode`: Use DOM parsing instead of clipboard for responses
-- `--input-file`, `-i`: Read message from this file instead of command line
-- `--output-file`, `-o`: Save response to this file
-- `--no-headless`: Show Chrome browser window instead of running headless
 
 ## Environment Variables
 
-All command-line options can be set using environment variables:
-- `SPARKAI_THREAD_ID`
-- `SPARKAI_CHROME_PROFILE`
-- `SPARKAI_TIMEOUT` 
-- `SPARKAI_NO_AUTO_LOGIN`
-- `SPARKAI_USERNAME`
-- `SPARKAI_PASSWORD`
-- `SPARKAI_COOKIE_FILE`
-- `SPARKAI_PARSER_MODE`
-- `SPARKAI_INPUT_FILE`
-- `SPARKAI_OUTPUT_FILE`
-- `SPARKAI_NO_HEADLESS`
-
-## Multi-line Input
-
-Multi-line messages are supported, with newlines automatically handled as Shift+Enter in the SparkAI interface.
-
-## Headless Mode
-
-By default, the browser runs in headless mode. Use `--no-headless` to show the browser window.
-
-## Contact
-
-Yusuke Watanabe (Yusuke.Watanabe@unimelb.edu.au)
+- `SPARKAI_USERNAME`: Your UoM SSO username
+- `SPARKAI_PASSWORD`: Your UoM SSO password
+- `SPARKAI_THREAD_ID`: Thread ID to resume a conversation
+- `SPARKAI_COOKIE_FILE`: Path to save/load session cookies
+- `SPARKAI_SESSION_ID`: Session ID for browser reuse
 
 <!-- EOF -->
