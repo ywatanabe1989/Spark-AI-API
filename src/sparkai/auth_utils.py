@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Timestamp: "2025-03-16 15:02:44 (ywatanabe)"
-# File: /home/ywatanabe/proj/spark-ai-api/src/sparkai/auth_utils.py
+# Timestamp: "2025-03-28 09:17:53 (ywatanabe)"
+# File: /home/ywatanabe/proj/spark-ai-api/src/sparkai/_auth_utils.py
 # ----------------------------------------
 import os
 __FILE__ = (
-    "/home/ywatanabe/proj/spark-ai-api/src/sparkai/auth_utils.py"
+    "/home/ywatanabe/proj/spark-ai-api/src/sparkai/_auth_utils.py"
 )
 __DIR__ = os.path.dirname(__FILE__)
 # ----------------------------------------
@@ -256,147 +256,5 @@ def handle_duo_authentication(driver, max_wait_sec=30):
 
     except Exception as e:
         sys.stderr.write(f"Error during authentication: {e}\n")
-
-# def login_to_spark(driver, username, password, max_wait_sec=30):
-#     """
-#     Perform login to Spark AI
-
-#     Parameters
-#     ----------
-#     driver : webdriver.Chrome
-#         Chrome WebDriver instance
-#     username : str
-#         UoM SSO username
-#     password : str
-#         UoM SSO password
-#     max_wait_sec : int
-#         Maximum wait time in seconds
-
-#     Returns
-#     -------
-#     bool
-#         Whether login was successful
-#     """
-#     try:
-#         # Navigate to SparkAI
-#         driver.get("https://spark.unimelb.edu.au/securechat")
-
-#         # Check if we're already on the messaging page
-#         try:
-#             # Use a shorter timeout just for checking if already logged in
-#             WebDriverWait(driver, 5).until(
-#                 EC.presence_of_element_located((By.NAME, "prompt"))
-#             )
-#             return True
-#         except TimeoutException:
-#             pass
-
-#         # Wait for login form - username field
-#         username_field = WebDriverWait(driver, max_wait_sec).until(
-#             EC.presence_of_element_located((By.NAME, "identifier"))
-#         )
-#         username_field.clear()
-#         username_field.send_keys(username)
-#         time.sleep(0.5)
-
-#         # Click the Next button
-#         next_button = WebDriverWait(driver, max_wait_sec).until(
-#             EC.element_to_be_clickable(
-#                 (By.CSS_SELECTOR, "input.button-primary[value='Next']")
-#             )
-#         )
-#         next_button.click()
-
-#         # Wait for password field to appear
-#         password_field = WebDriverWait(driver, max_wait_sec).until(
-#             EC.presence_of_element_located(
-#                 (By.NAME, "credentials.passcode")
-#             )
-#         )
-#         password_field.clear()
-#         password_field.send_keys(password)
-
-#         # Click verify button
-#         verify_button = WebDriverWait(driver, max_wait_sec).until(
-#             EC.element_to_be_clickable(
-#                 (By.CSS_SELECTOR, "input[type='submit'][value='Verify']")
-#             )
-#         )
-#         verify_button.click()
-
-#         # Handle authentication methods if they appear
-#         handle_duo_authentication(driver, max_wait_sec)
-
-#         # Wait for chat interface to load
-#         WebDriverWait(driver, max_wait_sec).until(
-#             EC.presence_of_element_located((By.NAME, "prompt"))
-#         )
-
-#         return True
-#     except Exception as e:
-#         sys.stderr.write(f"Login failed: {e}\n")
-#         return False
-
-# def handle_duo_authentication(driver, max_wait_sec=30):
-#     """
-#     Handle the Duo Security authentication page by selecting push notification if available.
-
-#     Parameters
-#     ----------
-#     driver : webdriver.Chrome
-#         Chrome WebDriver instance
-#     max_wait_sec : int
-#         Maximum wait time in seconds
-#     """
-#     try:
-#         # First check if we're already on an authentication page before waiting
-#         auth_elements = driver.find_elements(
-#             By.CLASS_NAME, "authenticator-verify-list"
-#         )
-
-#         # Only proceed with authentication if elements are already present
-#         if not auth_elements:
-#             # Quick check to see if authentication screen appears
-#             try:
-#                 WebDriverWait(driver, 3).until(
-#                     EC.presence_of_element_located(
-#                         (By.CLASS_NAME, "authenticator-verify-list")
-#                     )
-#                 )
-#             except TimeoutException:
-#                 # No authentication required, exit early
-#                 return
-
-#         # At this point, we know authentication is needed
-#         # Try to find the "Get a push notification" button
-#         push_buttons = driver.find_elements(
-#             By.XPATH,
-#             "//h3[contains(text(), 'Get a push notification')]/../..//a[contains(@class, 'button')]",
-#         )
-
-#         if push_buttons:
-#             # Click the push notification button
-#             push_buttons[0].click()
-#         else:
-#             # If push notification not available, look for any authentication option
-#             auth_buttons = driver.find_elements(
-#                 By.XPATH,
-#                 "//div[contains(@class, 'authenticator-button')]//a[contains(@class, 'button')]",
-#             )
-#             if auth_buttons:
-#                 auth_buttons[0].click()
-#             else:
-#                 sys.stderr.write("No authentication methods found. Manual intervention may be required.\n")
-#                 return
-
-#         # Wait for authentication to complete by checking for prompt
-#         try:
-#             WebDriverWait(driver, max_wait_sec).until(
-#                 EC.presence_of_element_located((By.NAME, "prompt"))
-#             )
-#         except TimeoutException:
-#             sys.stderr.write("Authentication timed out waiting for completion.\n")
-#     except Exception as e:
-#         sys.stderr.write(f"Error during authentication: {e}\n")
 
 # EOF

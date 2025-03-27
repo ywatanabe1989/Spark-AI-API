@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Timestamp: "2025-03-16 14:51:55 (ywatanabe)"
-# File: /home/ywatanabe/proj/spark-ai-api/src/sparkai/ChromeManager.py
+# Timestamp: "2025-03-28 09:17:52 (ywatanabe)"
+# File: /home/ywatanabe/proj/spark-ai-api/src/sparkai/_ChromeManager.py
 # ----------------------------------------
 import os
 __FILE__ = (
-    "/home/ywatanabe/proj/spark-ai-api/src/sparkai/ChromeManager.py"
+    "/home/ywatanabe/proj/spark-ai-api/src/sparkai/_ChromeManager.py"
 )
 __DIR__ = os.path.dirname(__FILE__)
 # ----------------------------------------
