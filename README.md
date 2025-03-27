@@ -1,5 +1,5 @@
 <!-- ---
-!-- Timestamp: 2025-03-16 07:52:43
+!-- Timestamp: 2025-03-28 09:34:45
 !-- Author: ywatanabe
 !-- File: /home/ywatanabe/proj/spark-ai-api/README.md
 !-- --- -->
@@ -21,16 +21,9 @@ pip install sparkai
 
 ```bash
 # Basic usage
+sparkai "Hi" --force-new-browser --force-new-window
 sparkai "Your question here"
-
-# With a specific thread ID
-sparkai --thread-id=123456 "Your question here"
-
-# Read from a file and write to a file
-sparkai --input-file=input.txt --output-file=output.txt
-
-# Keep the browser window open
-sparkai --no-headless --keep-open "Your question here"
+sparkai -i /path/to/input/text/file.txt
 ```
 
 ### As a Library
@@ -53,19 +46,6 @@ print(response)
 # Close the browser when done
 client.close()
 ```
-
-### API Service
-
-```bash
-# Start the API service
-sparkai-service --port=5000
-
-# Then make requests:
-curl -X POST http://localhost:5000/api/query \
-     -H "Content-Type: application/json" \
-     -d '{"message":"Your question here"}'
-```
-
 ## Environment Variables
 
 - `SPARKAI_USERNAME`: Your UoM SSO username

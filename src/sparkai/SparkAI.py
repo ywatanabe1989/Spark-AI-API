@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Timestamp: "2025-03-16 15:15:09 (ywatanabe)"
+# Timestamp: "2025-03-28 09:31:15 (ywatanabe)"
 # File: /home/ywatanabe/proj/spark-ai-api/src/sparkai/SparkAI.py
 # ----------------------------------------
 import os
@@ -569,113 +569,110 @@ class SparkAI:
         return self.chrome_manager.get_driver(self.browser_id)
 
 
-def main():
-    """
-    Main command-line interface function.
-    """
-    # Setup argument parser
-    parser = argparse.ArgumentParser(description="Interact with SparkAI")
-    parser.add_argument(
-        "message", nargs="*", help="Message to send to SparkAI"
-    )
-    parser.add_argument(
-        "--chat-id",
-        dest="chat_id",
-        help="Specified chat ID to continue conversation"
-    )
-    parser.add_argument(
-        "--no-auto-login",
-        action="store_true",
-        help="Don't attempt auto-login if not logged in"
-    )
-    parser.add_argument(
-        "--username",
-        help="Username for auto-login"
-    )
-    parser.add_argument(
-        "--password",
-        help="Password for auto-login"
-    )
-    parser.add_argument(
-        "--timeout",
-        type=int,
-        default=120,
-        help="Response timeout in seconds"
-    )
-    parser.add_argument(
-        "--headless",
-        action="store_true",
-        help="Run Chrome in headless mode"
-    )
-    parser.add_argument(
-        "--kill-zombie",
-        action="store_true",
-        help="Kill existing chrome processes"
-    )
-    parser.add_argument(
-        "--force-new-browser",
-        action="store_true",
-        help="Force creation of a new browser window"
-    )
-    parser.add_argument(
-        "--force-new-window",
-        action="store_true",
-        help="Force creation of a new Chrome window even if one exists"
-    )
+# def main():
+#     """
+#     Main command-line interface function.
+#     """
+#     # Setup argument parser
+#     parser = argparse.ArgumentParser(description="Interact with SparkAI")
+#     parser.add_argument(
+#         "message", nargs="*", help="Message to send to SparkAI"
+#     )
+#     parser.add_argument(
+#         "--chat-id",
+#         dest="chat_id",
+#         help="Specified chat ID to continue conversation"
+#     )
+#     parser.add_argument(
+#         "--no-auto-login",
+#         action="store_true",
+#         help="Don't attempt auto-login if not logged in"
+#     )
+#     parser.add_argument(
+#         "--username",
+#         help="Username for auto-login"
+#     )
+#     parser.add_argument(
+#         "--password",
+#         help="Password for auto-login"
+#     )
+#     parser.add_argument(
+#         "--timeout",
+#         type=int,
+#         default=120,
+#         help="Response timeout in seconds"
+#     )
+#     parser.add_argument(
+#         "--headless",
+#         action="store_true",
+#         help="Run Chrome in headless mode"
+#     )
+#     parser.add_argument(
+#         "--kill-zombie",
+#         action="store_true",
+#         help="Kill existing chrome processes"
+#     )
+#     parser.add_argument(
+#         "--force-new-browser",
+#         action="store_true",
+#         help="Force creation of a new browser window"
+#     )
+#     parser.add_argument(
+#         "--force-new-window",
+#         action="store_true",
+#         help="Force creation of a new Chrome window even if one exists"
+#     )
 
-    # Parse arguments
-    args = parser.parse_args()
-    args.force_new_chat = (not args.chat_id)
-    args.auto_login = (not args.no_auto_login)
+#     # Parse arguments
+#     args = parser.parse_args()
+#     args.force_new_chat = (not args.chat_id)
+#     args.auto_login = (not args.no_auto_login)
 
-    # Make message into a single string
-    message = " ".join(args.message) if args.message else ""
+#     # Make message into a single string
+#     message = " ".join(args.message) if args.message else ""
 
-    # Check for special debug commands
-    if message == "__debug":
-        handle_debug_command()
-        return
+#     # Check for special debug commands
+#     if message == "__debug":
+#         handle_debug_command()
+#         return
 
-    # Initialize SparkAI
-    browser_id = os.environ.get("SPARKAI_BROWSER_ID", "spark-ai-chat")
+#     # Initialize SparkAI
+#     browser_id = os.environ.get("SPARKAI_BROWSER_ID", "spark-ai-chat")
 
-    # Get username and password from environment if not provided
-    username = args.username or os.environ.get("SPARKAI_USERNAME")
-    password = args.password or os.environ.get("SPARKAI_PASSWORD")
+#     # Get username and password from environment if not provided
+#     username = args.username or os.environ.get("SPARKAI_USERNAME")
+#     password = args.password or os.environ.get("SPARKAI_PASSWORD")
 
-    try:
-        sparkai = SparkAI(
-            chat_id=args.chat_id,
-            browser_id=browser_id,
-            auto_login=args.auto_login,
-            username=username,
-            password=password,
-            response_timeout=args.timeout,
-            headless=args.headless,
-            force_new_chat=args.force_new_chat,
-            kill_zombie=args.kill_zombie,
-            reuse_browser=not args.force_new_browser,
-            force_new_window=args.force_new_window,
-        )
+#     try:
+#         sparkai = SparkAI(
+#             chat_id=args.chat_id,
+#             browser_id=browser_id,
+#             auto_login=args.auto_login,
+#             username=username,
+#             password=password,
+#             response_timeout=args.timeout,
+#             headless=args.headless,
+#             force_new_chat=args.force_new_chat,
+#             kill_zombie=args.kill_zombie,
+#             reuse_browser=not args.force_new_browser,
+#             force_new_window=args.force_new_window,
+#         )
 
-        # If we have a message, send it
-        if message:
-            response = sparkai.send_message(message)
-            print(response)  # Print to stdout for user
+#         # If we have a message, send it
+#         if message:
+#             response = sparkai.send_message(message)
+#             print(response)  # Print to stdout for user
 
-        # Keep browser session alive for reuse
-        debug_print(f"Browser is being kept open with ID: {browser_id}")
-        debug_print(f"Use SPARKAI_BROWSER_ID={browser_id} to reuse this browser")
-        sparkai.chrome_manager.release_driver(browser_id)
+#         # Keep browser session alive for reuse
+#         debug_print(f"Browser is being kept open with ID: {browser_id}")
+#         debug_print(f"Use SPARKAI_BROWSER_ID={browser_id} to reuse this browser")
+#         sparkai.chrome_manager.release_driver(browser_id)
 
-        # Output the browser ID for possible reuse
-        debug_print(browser_id)
-        return 0
-    except Exception as e:
-        debug_print(f"Error: {e}")
-        return 1
-
-# if __name__ == "__main__":
-#     main()
+#         # Output the browser ID for possible reuse
+#         debug_print(browser_id)
+#         return 0
+#     except Exception as e:
+#         debug_print(f"Error: {e}")
+#         return 1
 
 # EOF

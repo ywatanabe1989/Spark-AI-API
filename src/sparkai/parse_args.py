@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Timestamp: "2025-03-16 13:42:57 (ywatanabe)"
+# Timestamp: "2025-03-28 09:30:38 (ywatanabe)"
 # File: /home/ywatanabe/proj/spark-ai-api/src/sparkai/parse_args.py
 # ----------------------------------------
 import os
@@ -23,7 +23,9 @@ def parse_args() -> argparse.Namespace:
         default_chat_id = None
     default_chrome_profile = os.environ.get("SPARKAI_CHROME_PROFILE")
     default_timeout = int(os.environ.get("SPARKAI_TIMEOUT", "5"))
-    default_response_timeout = int(os.environ.get("SPARKAI_RESPONSE_TIMEOUT", "120"))
+    default_response_timeout = int(
+        os.environ.get("SPARKAI_RESPONSE_TIMEOUT", "120")
+    )
     default_username = os.environ.get("SPARKAI_USERNAME")
     default_password = os.environ.get("SPARKAI_PASSWORD")
     default_cookie_file = os.environ.get("SPARKAI_COOKIE_FILE")
@@ -104,6 +106,13 @@ def parse_args() -> argparse.Namespace:
         default=os.environ.get("SPARKAI_HEADLESS", "").lower()
         in ("true", "yes", "1"),
         help="Hide Chrome browser window",
+    )
+    parser.add_argument(
+        "--visible",
+        action="store_true",
+        default=os.environ.get("SPARKAI_VISIBLE", "").lower()
+        in ("true", "yes", "1"),
+        help="Run Chrome in visible mode (non-headless)",
     )
     parser.add_argument(
         "--no-persistent-profile",

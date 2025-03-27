@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Timestamp: "2025-03-16 09:42:24 (ywatanabe)"
+# Timestamp: "2025-03-28 09:32:07 (ywatanabe)"
 # File: /home/ywatanabe/proj/spark-ai-api/setup.py
 # ----------------------------------------
 import os
@@ -79,7 +79,7 @@ setup(
     python_requires=">=3.8",
     entry_points={
         "console_scripts": [
-            "sparkai=sparkai.SparkAI:main",  # Command-line entry point
+            "sparkai=sparkai.main:main",  # Command-line entry point
         ],
     },
 )
