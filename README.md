@@ -1,5 +1,5 @@
 <!-- ---
-!-- Timestamp: 2025-03-28 09:34:45
+!-- Timestamp: 2025-03-28 09:36:30
 !-- Author: ywatanabe
 !-- File: /home/ywatanabe/proj/spark-ai-api/README.md
 !-- --- -->
@@ -53,5 +53,8 @@ client.close()
 - `SPARKAI_THREAD_ID`: Thread ID to resume a conversation
 - `SPARKAI_COOKIE_FILE`: Path to save/load session cookies
 - `SPARKAI_SESSION_ID`: Session ID for browser reuse
+
+## Contact
+Yusuke Watanabe (Yusuke.Watanabe@unimelb.edu.au)
 
 <!-- EOF -->
